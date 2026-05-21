@@ -1,0 +1,10 @@
+services:
+  backend:
+    build: ./backend
+    container_name: nexttrack_backend
+    ports:
+      - "${BACKEND_PORT}:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
