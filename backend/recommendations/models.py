@@ -13,6 +13,7 @@ from django.db import models
 # =========================================================
 class Artist(models.Model):
     artist_name = models.CharField(max_length=255, unique=True)
+    musicbrainz_artist_id = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return self.artist_name
@@ -35,12 +36,15 @@ class Genre(models.Model):
 # =========================================================
 class Album(models.Model):
     album_name = models.CharField(max_length=255)
+    musicbrainz_release_id = models.CharField(max_length=100, blank=True)
 
     artist = models.ForeignKey(
         Artist,
         on_delete=models.CASCADE,
         related_name="albums"
     )
+    cover_image_url = models.URLField(blank=True)
+    
 
     def __str__(self):
         return self.album_name
@@ -53,6 +57,8 @@ class Album(models.Model):
 # =========================================================
 class Track(models.Model):
     track_name = models.CharField(max_length=255)
+    msd_track_id = models.CharField(max_length=100, blank=True, null=True, unique=True)
+    msd_song_id = models.CharField(max_length=100, blank=True, null=True)
 
     album = models.ForeignKey(
         Album,
@@ -193,3 +199,131 @@ class RecommendationResult(models.Model):
 
     def __str__(self):
         return f"{self.track} - score {self.score}"
+    
+
+# =========================================================
+# Staging model to handle import and data cleanliness
+# IMPORTED TRACK DATA MODEL
+# Stores raw external music data before it is cleaned and
+# mapped into Artist, Album, Genre and Track.
+# =========================================================
+class ImportedTrackData(models.Model):
+    SOURCE_CHOICES = [
+        ("MSD", "Million Song Dataset"),
+        ("MUSICBRAINZ", "MusicBrainz"),
+    ]
+
+    source = models.CharField(
+        max_length=50,
+        choices=SOURCE_CHOICES
+    )
+
+    source_track_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    source_song_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    artist_name = models.CharField(
+        max_length=255,
+        blank=True
+    )
+
+    artist_mbid = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    album_name = models.CharField(
+        max_length=255,
+        blank=True
+    )
+
+    track_name = models.CharField(
+        max_length=255,
+        blank=True
+    )
+
+    genre = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    tempo = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    energy = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    mood = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
+    raw_data = models.JSONField(
+        null=True,
+        blank=True
+    )
+
+    processed = models.BooleanField(
+        default=False
+    )
+
+    processing_error = models.TextField(
+        blank=True
+    )
+
+    imported_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    processed_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["source"]),
+            models.Index(fields=["processed"]),
+            models.Index(fields=["source_track_id"]),
+        ]
+
+    def __str__(self):
+        return f"{self.source} - {self.track_name}"
+    
+
+# =========================================================
+# PROTOTYPE FEEDBACK MODEL
+# Stores user feedback from prototype testing
+# =========================================================
+class PrototypeFeedback(models.Model):
+    session = models.ForeignKey(
+        Session,
+        on_delete=models.CASCADE,
+        related_name="feedback",
+        null=True,
+        blank=True
+    )
+
+    recommendation_relevance = models.PositiveSmallIntegerField()
+    explanation_clarity = models.PositiveSmallIntegerField()
+    interface_ease_of_use = models.PositiveSmallIntegerField()
+    search_clarity = models.PositiveSmallIntegerField()
+
+    comments = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback {self.id} - Session {self.session_id}"

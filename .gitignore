@@ -27,3 +27,13 @@ node_modules/
 .pytest_cache/
 
 .DS_Store
+
+# =====================================================
+# MILLION SONG DATASET
+# External datasets should not be committed to Git
+# =====================================================
+
+
+backend/recommendations/external_data/msd/
+*.db
+*.h5

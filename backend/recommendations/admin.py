@@ -9,7 +9,8 @@ from .models import (
     Track,
     Session,
     SessionTrack,
-    RecommendationResult
+    RecommendationResult,
+    PrototypeFeedback
 )
 
 
@@ -114,6 +115,27 @@ class RecommendationResultAdmin(admin.ModelAdmin):
         "session",
         "track",
         "score",
+        "created_at",
+    )
+
+    list_filter = ("created_at",)
+
+
+# =========================================================
+# USER TESTING MODEL ADMIN
+# =========================================================
+
+
+@admin.register(PrototypeFeedback)
+class PrototypeFeedbackAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "session",
+        "recommendation_relevance",
+        "explanation_clarity",
+        "interface_ease_of_use",
+        "search_clarity",
+        "comments",
         "created_at",
     )
 
