@@ -5,60 +5,144 @@
 
 
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-# =========================================================
-# ARTIST MODEL
-# Stores artist information
-# =========================================================
+
+# Stores artist information.
 class Artist(models.Model):
-    artist_name = models.CharField(max_length=255, unique=True)
-    musicbrainz_artist_id = models.CharField(max_length=100, blank=True)
+    artist_name = models.CharField(
+        max_length=255,
+        unique=True
+    )
+
+    musicbrainz_artist_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        unique=True
+    )
 
     def __str__(self):
         return self.artist_name
 
 
-# =========================================================
-# GENRE MODEL
-# Stores music genre categories
-# =========================================================
+# Stores music genre categories.
 class Genre(models.Model):
-    genre = models.CharField(max_length=100, unique=True)
+    genre = models.CharField(
+        max_length=100,
+        unique=True
+    )
 
     def __str__(self):
         return self.genre
 
 
-# =========================================================
-# ALBUM MODEL
-# Stores album information linked to an artist
-# =========================================================
+# Stores flexible descriptive tags obtained from external datasets.
+class Tag(models.Model):
+    CATEGORY_CHOICES = [
+        ("GENRE", "Genre"),
+        ("MOOD", "Mood"),
+        ("ERA", "Era"),
+        ("CONTEXT", "Listening context"),
+        ("OTHER", "Other"),
+    ]
+
+    name = models.CharField(
+        max_length=100,
+        unique=True
+    )
+
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default="OTHER"
+    )
+
+    def __str__(self):
+        return self.name
+
+
+# Stores album information linked to an artist.
 class Album(models.Model):
-    album_name = models.CharField(max_length=255)
-    musicbrainz_release_id = models.CharField(max_length=100, blank=True)
+    album_name = models.CharField(
+        max_length=255
+    )
 
     artist = models.ForeignKey(
         Artist,
         on_delete=models.CASCADE,
         related_name="albums"
     )
-    cover_image_url = models.URLField(blank=True)
-    
+
+    musicbrainz_release_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        unique=True
+    )
+
+    musicbrainz_release_group_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    release_year = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True
+    )
+
+    cover_image_url = models.URLField(
+        blank=True
+    )
+
+    cover_thumbnail_url = models.URLField(
+        blank=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["artist", "album_name"],
+                name="unique_album_per_artist"
+            )
+        ]
+        indexes = [
+            models.Index(fields=["album_name"]),
+            models.Index(fields=["musicbrainz_release_group_id"]),
+        ]
 
     def __str__(self):
-        return self.album_name
+        return f"{self.album_name} - {self.artist.artist_name}"
 
 
-# =========================================================
-# TRACK MODEL
-# Core music catalogue entity
-# Stores track metadata and recommendation attributes
-# =========================================================
+# Core music catalogue entity.
+# Stores track metadata and recommendation attributes.
 class Track(models.Model):
-    track_name = models.CharField(max_length=255)
-    msd_track_id = models.CharField(max_length=100, blank=True, null=True, unique=True)
-    msd_song_id = models.CharField(max_length=100, blank=True, null=True)
+    track_name = models.CharField(
+        max_length=255
+    )
+
+    msd_track_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        unique=True
+    )
+
+    msd_song_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    musicbrainz_recording_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        unique=True
+    )
 
     album = models.ForeignKey(
         Album,
@@ -74,6 +158,7 @@ class Track(models.Model):
         related_name="tracks"
     )
 
+    # Primary genre used for display and simple filtering.
     genre = models.ForeignKey(
         Genre,
         on_delete=models.SET_NULL,
@@ -82,14 +167,36 @@ class Track(models.Model):
         related_name="tracks"
     )
 
-    tempo = models.PositiveIntegerField(
+    tags = models.ManyToManyField(
+        Tag,
+        through="TrackTag",
+        related_name="tracks",
+        blank=True
+    )
+
+    duration_seconds = models.FloatField(
         null=True,
         blank=True
     )
 
-    energy = models.PositiveSmallIntegerField(
+    release_year = models.PositiveSmallIntegerField(
         null=True,
         blank=True
+    )
+
+    tempo = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    # Normalised application scale from 1 to 10.
+    energy = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(10),
+        ]
     )
 
     mood = models.CharField(
@@ -97,21 +204,112 @@ class Track(models.Model):
         blank=True
     )
 
+    popularity = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    familiarity = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    loudness = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    enrichment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("PENDING", "Pending"),
+            ("MATCHED", "Matched"),
+            ("AMBIGUOUS", "Ambiguous"),
+            ("NOT_FOUND", "Not found"),
+            ("FAILED", "Failed"),
+        ],
+        default="PENDING"
+    )
+
+    enrichment_error = models.TextField(
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["track_name"]),
+            models.Index(fields=["artist", "track_name"]),
+            models.Index(fields=["genre"]),
+            models.Index(fields=["tempo"]),
+            models.Index(fields=["energy"]),
+            models.Index(fields=["enrichment_status"]),
+        ]
+
     def __str__(self):
         return f"{self.track_name} - {self.artist.artist_name}"
 
 
-# =========================================================
-# SESSION MODEL
-# Represents a single recommendation request/session
-# Stores user recommendation preferences
-# =========================================================
+# Connects tracks to descriptive tags and stores the strength
+# of each source-provided tag.
+class TrackTag(models.Model):
+    track = models.ForeignKey(
+        Track,
+        on_delete=models.CASCADE,
+        related_name="track_tags"
+    )
+
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE,
+        related_name="track_tags"
+    )
+
+    weight = models.FloatField(
+        default=1.0,
+        validators=[
+            MinValueValidator(0.0)
+        ]
+    )
+
+    source = models.CharField(
+        max_length=50,
+        blank=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["track", "tag"],
+                name="unique_tag_per_track"
+            )
+        ]
+        ordering = ["-weight"]
+
+    def __str__(self):
+        return f"{self.track} - {self.tag} ({self.weight})"
+
+
+# Represents a single recommendation request/session.
 class Session(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     popularity = models.PositiveSmallIntegerField(
         null=True,
-        blank=True
+        blank=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(10),
+        ]
     )
 
     genre_pref = models.CharField(
@@ -121,7 +319,11 @@ class Session(models.Model):
 
     energy_pref = models.PositiveSmallIntegerField(
         null=True,
-        blank=True
+        blank=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(10),
+        ]
     )
 
     mood_pref = models.CharField(
@@ -129,25 +331,25 @@ class Session(models.Model):
         blank=True
     )
 
-    tempo_pref = models.PositiveIntegerField(
+    tempo_pref = models.FloatField(
         null=True,
         blank=True
     )
 
     user_rating = models.PositiveSmallIntegerField(
         null=True,
-        blank=True
+        blank=True,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
     )
 
     def __str__(self):
         return f"Session {self.id} - {self.created_at}"
 
 
-# =========================================================
-# SESSION TRACK MODEL
-# Stores tracks entered during a recommendation session
-# Maintains listening order using 'position'
-# =========================================================
+# Stores tracks entered during a recommendation session.
 class SessionTrack(models.Model):
     session = models.ForeignKey(
         Session,
@@ -165,16 +367,22 @@ class SessionTrack(models.Model):
 
     class Meta:
         ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "position"],
+                name="unique_position_per_session"
+            ),
+            models.UniqueConstraint(
+                fields=["session", "track"],
+                name="unique_track_per_session"
+            ),
+        ]
 
     def __str__(self):
         return f"{self.session} - {self.track} ({self.position})"
 
 
-# =========================================================
-# RECOMMENDATION RESULT MODEL
-# Stores recommendation results generated for a session
-# Includes recommendation score and explanation
-# =========================================================
+# Stores recommendation results generated for a session.
 class RecommendationResult(models.Model):
     session = models.ForeignKey(
         Session,
@@ -190,27 +398,35 @@ class RecommendationResult(models.Model):
 
     score = models.FloatField()
 
-    reason = models.TextField(blank=True)
+    reason = models.TextField(
+        blank=True
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     class Meta:
         ordering = ["-score", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "track"],
+                name="unique_recommendation_per_session"
+            )
+        ]
 
     def __str__(self):
         return f"{self.track} - score {self.score}"
-    
 
-# =========================================================
-# Staging model to handle import and data cleanliness
-# IMPORTED TRACK DATA MODEL
-# Stores raw external music data before it is cleaned and
-# mapped into Artist, Album, Genre and Track.
-# =========================================================
+
+# Stores raw external music data before it is cleaned and mapped
+# into Artist, Album, Genre, Tag and Track records.
 class ImportedTrackData(models.Model):
     SOURCE_CHOICES = [
         ("MSD", "Million Song Dataset"),
+        ("LASTFM", "Last.fm Dataset"),
         ("MUSICBRAINZ", "MusicBrainz"),
+        ("COVER_ART", "Cover Art Archive"),
     ]
 
     source = models.CharField(
@@ -245,13 +461,33 @@ class ImportedTrackData(models.Model):
         blank=True
     )
 
+    album_mbid = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
     track_name = models.CharField(
         max_length=255,
         blank=True
     )
 
+    recording_mbid = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
     genre = models.CharField(
         max_length=100,
+        blank=True
+    )
+
+    duration_seconds = models.FloatField(
+        null=True,
+        blank=True
+    )
+
+    release_year = models.PositiveSmallIntegerField(
+        null=True,
         blank=True
     )
 
@@ -297,16 +533,21 @@ class ImportedTrackData(models.Model):
             models.Index(fields=["source"]),
             models.Index(fields=["processed"]),
             models.Index(fields=["source_track_id"]),
+            models.Index(fields=["artist_name", "track_name"]),
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source", "source_track_id"],
+                name="unique_imported_source_track"
+            )
         ]
 
     def __str__(self):
         return f"{self.source} - {self.track_name}"
-    
 
-# =========================================================
-# PROTOTYPE FEEDBACK MODEL
-# Stores user feedback from prototype testing
-# =========================================================
+
+# Stores user feedback from prototype testing.
 class PrototypeFeedback(models.Model):
     session = models.ForeignKey(
         Session,
@@ -316,14 +557,41 @@ class PrototypeFeedback(models.Model):
         blank=True
     )
 
-    recommendation_relevance = models.PositiveSmallIntegerField()
-    explanation_clarity = models.PositiveSmallIntegerField()
-    interface_ease_of_use = models.PositiveSmallIntegerField()
-    search_clarity = models.PositiveSmallIntegerField()
+    recommendation_relevance = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
+    )
 
-    comments = models.TextField(blank=True)
+    explanation_clarity = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    interface_ease_of_use = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
+    )
+
+    search_clarity = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
+    )
+
+    comments = models.TextField(
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     def __str__(self):
         return f"Feedback {self.id} - Session {self.session_id}"

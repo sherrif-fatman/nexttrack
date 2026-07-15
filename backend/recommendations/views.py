@@ -1,6 +1,3 @@
-# =========================================================
-# IMPORTS
-# =========================================================
 
 from django.db.models import Q
 
@@ -18,39 +15,18 @@ from .models import (
 
 from .services.recommender import recommend_track_for_session
 
-
-# =========================================================
-# RECOMMEND TRACK API
-#
-# Handles recommendation requests from the frontend.
-#
-# Expected POST body:
-#
-# {
-#   "track_ids": [10005],
-#   "preferences": {
-#     "genre": "rock",
-#     "mood": "",
-#     "energy": 5,
-#     "tempo": null
-#   }
-# }
-# =========================================================
 @api_view(["POST"])
 def recommend_track(request):
 
-    # -----------------------------------------------------
-    # Get request data from frontend
-    # -----------------------------------------------------
+
+#Get request data from frontend
+
     track_ids = request.data.get("track_ids", [])
     preferences = request.data.get("preferences", {})
 
-    # -----------------------------------------------------
-    # Create a new recommendation session
-    #
-    # This stores the user preferences used for the
-    # recommendation request.
-    # -----------------------------------------------------
+
+#Create a new recommendation session
+    
     session = Session.objects.create(
         genre_pref=preferences.get("genre", ""),
         mood_pref=preferences.get("mood", ""),
@@ -58,12 +34,9 @@ def recommend_track(request):
         tempo_pref=preferences.get("tempo"),
     )
 
-    # -----------------------------------------------------
-    # Attach selected tracks to the session
-    #
-    # These are the tracks the user selected as input
-    # for generating recommendations.
-    # -----------------------------------------------------
+
+#Attach selected tracks to the session
+    
     for index, track_id in enumerate(track_ids, start=1):
 
         try:
@@ -77,9 +50,9 @@ def recommend_track(request):
 
         except Track.DoesNotExist:
 
-            # ---------------------------------------------
-            # Return error if selected track does not exist
-            # ---------------------------------------------
+            
+            #Return error if selected track does not exist
+            
             return Response(
                 {
                     "error": f"Track with id {track_id} does not exist"
@@ -87,11 +60,10 @@ def recommend_track(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    # -----------------------------------------------------
-    # Run recommendation engine
-    #
-    # Returns the highest scoring recommended track.
-    # -----------------------------------------------------
+
+#Run recommendation engine
+#Returns the highest scoring recommended track.
+
     recommendation_items = recommend_track_for_session(
         session=session,
         limit=20
@@ -123,28 +95,12 @@ def recommend_track(request):
         status=status.HTTP_200_OK
     )
 
-# =========================================================
-# PROTOTYPE FEEDBACK API
-#
-# Stores user feedback from prototype evaluation.
-#
-# Expected POST body:
-#
-# {
-#   "session_id": 42,
-#   "recommendation_relevance": 4,
-#   "explanation_clarity": 5,
-#   "interface_ease_of_use": 4,
-#   "search_clarity": 5,
-#   "comments": "Recommendations were interesting but genre matching was weak."
-# }
-# =========================================================
 @api_view(["POST"])
 def submit_feedback(request):
 
-    # -----------------------------------------------------
-    # Get feedback data from frontend request
-    # -----------------------------------------------------
+
+# Get feedback data from frontend request
+
     session_id = request.data.get("session_id")
 
     recommendation_relevance = request.data.get(
@@ -165,9 +121,9 @@ def submit_feedback(request):
 
     comments = request.data.get("comments", "")
 
-    # -----------------------------------------------------
-    # Validate session
-    # -----------------------------------------------------
+
+#Validate session
+    
     try:
         session = Session.objects.get(id=session_id)
 
@@ -180,9 +136,9 @@ def submit_feedback(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # -----------------------------------------------------
-    # Create feedback record
-    # -----------------------------------------------------
+
+#Create feedback record
+
     feedback = PrototypeFeedback.objects.create(
         session=session,
         recommendation_relevance=recommendation_relevance,
@@ -192,9 +148,9 @@ def submit_feedback(request):
         comments=comments,
     )
 
-    # -----------------------------------------------------
-    # Return success response
-    # -----------------------------------------------------
+
+#Return success response
+
     return Response(
         {
             "message": "Feedback submitted successfully",
@@ -204,95 +160,24 @@ def submit_feedback(request):
     )
 
 
-    # -----------------------------------------------------
-    # Handle case where no recommendation is available
-    # -----------------------------------------------------
-    # if recommended_track is None:
+#TRACK SEARCH API
 
-    #     return Response(
-    #         {
-    #             "session_id": session.id,
-    #             "recommendations": []
-    #         },
-    #         status=status.HTTP_200_OK
-    #     )
-
-    # # -----------------------------------------------------
-    # # Get stored recommendation scoring information
-    # # -----------------------------------------------------
-    # result = RecommendationResult.objects.filter(
-    #     session=session,
-    #     track=recommended_track
-    # ).first()
-
-    # # -----------------------------------------------------
-    # # Format recommendation response object
-    # # -----------------------------------------------------
-    # recommendation = {
-    #     "id": recommended_track.id,
-    #     "track_name": recommended_track.track_name,
-    #     "artist": recommended_track.artist.artist_name,
-    #     "album": (
-    #         recommended_track.album.album_name
-    #         if recommended_track.album else None
-    #     ),
-    #     "genre": (
-    #         recommended_track.genre.genre
-    #         if recommended_track.genre else None
-    #     ),
-    #     "tempo": recommended_track.tempo,
-    #     "energy": recommended_track.energy,
-    #     "mood": recommended_track.mood,
-    #     "score": result.score if result else None,
-    #     "reason": result.reason if result else "",
-    # }
-
-    # # -----------------------------------------------------
-    # # Return recommendation response to frontend
-    # #
-    # # recommendations is returned as an ARRAY so the
-    # # frontend can later support multiple results.
-    # # -----------------------------------------------------
-    # return Response(
-    #     {
-    #         "session_id": session.id,
-    #         "recommendations": [recommendation]
-    #     },
-    #     status=status.HTTP_200_OK
-    # )
-
-
-# =========================================================
-# TRACK SEARCH API
-#
-# Allows frontend predictive searching using:
-#
-# - Track name
-# - Artist name
-# - Album name
-#
-# Example:
-# /api/tracks/search/?q=bonobo
-# =========================================================
 @api_view(["GET"])
 def search_tracks(request):
 
-    # -----------------------------------------------------
-    # Get search query from URL parameter
-    # -----------------------------------------------------
+
+#Get search query from URL parameter
+  
     query = request.GET.get("q", "").strip()
 
-    # -----------------------------------------------------
-    # Return empty array if query is blank
-    # -----------------------------------------------------
+    
+#Return empty array if query is blank
+
     if not query:
         return Response([])
 
-    # -----------------------------------------------------
-    # Search tracks using partial matching
-    #
-    # icontains performs case-insensitive matching.
-    # -----------------------------------------------------
+#Search tracks using partial matching
+#i contains performs case-insensitive matching.
     tracks = Track.objects.filter(
         Q(track_name__icontains=query) |
         Q(artist__artist_name__icontains=query) |
@@ -303,9 +188,9 @@ def search_tracks(request):
         "genre"
     )[:20]
 
-    # -----------------------------------------------------
-    # Build JSON response list
-    # -----------------------------------------------------
+    
+#Build JSON response list
+    
     results = []
 
     for track in tracks:
@@ -324,7 +209,6 @@ def search_tracks(request):
             ),
         })
 
-    # -----------------------------------------------------
-    # Return matching tracks to frontend
-    # -----------------------------------------------------
+
+#Return matching tracks to frontend
     return Response(results)

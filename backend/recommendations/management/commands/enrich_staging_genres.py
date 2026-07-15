@@ -1,13 +1,5 @@
-# =========================================================
-# ENRICH STAGING GENRES COMMAND
-#
-# Uses artist_term.db from the Million Song Dataset to add
-# genre/tag data to ImportedTrackData before the data is
-# processed into the production Track table.
-#
-# Usage:
-# python manage.py enrich_staging_genres --limit 5000
-# =========================================================
+
+#enrich staging genres
 
 import sqlite3
 from pathlib import Path
