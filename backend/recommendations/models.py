@@ -238,6 +238,24 @@ class Track(models.Model):
         blank=True,
     )
 
+    key = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(11),
+        ],
+    )
+
+    mode = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(1),
+        ],
+    )
+
     familiarity = models.FloatField(
         null=True,
         blank=True,

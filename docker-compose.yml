@@ -8,6 +8,7 @@ services:
       - .env
     volumes:
       - ./backend:/app
+      - /Volumes/MatthewSSD/nexttrack_data/MillionSongSubset:/data/msd:ro
     depends_on:
       - db
 

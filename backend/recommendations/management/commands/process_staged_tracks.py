@@ -231,43 +231,66 @@ class Command(BaseCommand):
         artist_mbid,
     ):
         """
-        Match by MusicBrainz ID only when the existing artist name is
-        compatible with the staged artist credit.
+        Create or reuse an Artist primarily by artist name.
+
+        MusicBrainz artist IDs are treated as optional enrichment.
+        If an MBID is already assigned to a different artist, the
+        catalogue record is still created without assigning the
+        conflicting MBID.
         """
 
         artist_mbid = artist_mbid or None
 
-        if artist_mbid:
-            existing_artist = Artist.objects.filter(
-                musicbrainz_artist_id=artist_mbid,
-            ).first()
-
-            if existing_artist:
-                if self.artist_names_compatible(
-                    existing_artist.artist_name,
-                    artist_name,
-                ):
-                    return existing_artist
-
-                raise ValueError(
-                    "Conflicting MusicBrainz artist match: "
-                    f"staged artist '{artist_name}' uses MBID "
-                    f"{artist_mbid}, already assigned to "
-                    f"'{existing_artist.artist_name}'."
-                )
-
+        # Artist name is the primary catalogue identity.
         artist, _ = Artist.objects.get_or_create(
             artist_name=artist_name,
         )
 
-        if artist_mbid and not artist.musicbrainz_artist_id:
-            artist.musicbrainz_artist_id = artist_mbid
-            artist.save(
-                update_fields=["musicbrainz_artist_id"]
+        if not artist_mbid:
+            return artist
+
+        # Artist already has this MBID.
+        if artist.musicbrainz_artist_id == artist_mbid:
+            return artist
+
+        # Artist already has a different MBID.
+        # Preserve the existing value rather than overwriting it.
+        if artist.musicbrainz_artist_id:
+            self.stdout.write(
+                self.style.WARNING(
+                    "MusicBrainz ID mismatch for "
+                    f"'{artist_name}'. "
+                    "Keeping existing ID."
+                )
             )
+            return artist
+
+        # Check whether the incoming MBID is already assigned
+        # to another artist.
+        existing_artist = Artist.objects.filter(
+            musicbrainz_artist_id=artist_mbid,
+        ).exclude(
+            pk=artist.pk,
+        ).first()
+
+        if existing_artist:
+            self.stdout.write(
+                self.style.WARNING(
+                    "Ignoring conflicting MusicBrainz ID "
+                    f"{artist_mbid} for '{artist_name}'; "
+                    f"already assigned to "
+                    f"'{existing_artist.artist_name}'."
+                )
+            )
+            return artist
+
+        # Safe to assign the MBID.
+        artist.musicbrainz_artist_id = artist_mbid
+        artist.save(
+            update_fields=["musicbrainz_artist_id"]
+        )
 
         return artist
-
 
     @staticmethod
     def normalise_artist_name(value):
@@ -285,7 +308,6 @@ class Command(BaseCommand):
             .replace(",", " ")
             .split()
         )
-
 
     @classmethod
     def artist_names_compatible(cls, first_name, second_name):

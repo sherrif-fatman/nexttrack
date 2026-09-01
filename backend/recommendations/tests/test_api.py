@@ -1,23 +1,14 @@
-# useful commands docker compose run --rm backend python manage.py test
-# Test to check that the recommender API is available
-
-# from rest_framework.test import APITestCase
-
-
-# class RecommendTrackAPITest(APITestCase):
-#     def test_recommend_track_returns_mock_result(self):
-#         response = self.client.post(
-#             "/api/recommend/",
-#             {
-#                 "tracks": ["Song A", "Song B"],
-#                 "preferences": {"mood": "focused"},
-#             },
-#             format="json",
-#         )
-
-#         self.assertEqual(response.status_code, 200)
-#         self.assertIn("recommended_track", response.data)
-#         self.assertEqual(response.data["recommended_track"]["title"], "Midnight City")
+# =========================================================
+# RECOMMENDATION API TESTS
+#
+# These tests check that the API endpoint correctly:
+# - creates a session
+# - accepts selected track IDs
+# - runs the recommender
+# - returns ranked recommendations
+# - saves recommendation results
+# - rejects invalid track IDs
+# =========================================================
 
 from rest_framework.test import APITestCase
 
@@ -26,22 +17,17 @@ from recommendations.models import (
     Genre,
     Album,
     Track,
+    Tag,
+    TrackTag,
     Session,
     RecommendationResult,
 )
 
 
-# =========================================================
-# RECOMMENDATION API TESTS
-#
-# These tests check that the API endpoint correctly creates
-# a session, runs the recommender, and returns a real result.
-# =========================================================
 class RecommendTrackAPITest(APITestCase):
 
     # =====================================================
     # SETUP TEST DATA
-    # Runs before each test
     # =====================================================
     def setUp(self):
 
@@ -68,8 +54,21 @@ class RecommendTrackAPITest(APITestCase):
         )
 
         # -------------------------------------------------
-        # Track submitted by the user
-        # This should be excluded from recommendation.
+        # Create musical tags used by the recommender
+        # -------------------------------------------------
+        self.electronic_tag = Tag.objects.create(
+            name="electronic",
+            category="genre"
+        )
+
+        self.ambient_tag = Tag.objects.create(
+            name="ambient",
+            category="genre"
+        )
+
+        # -------------------------------------------------
+        # Track submitted by the user.
+        # This should be excluded from recommendations.
         # -------------------------------------------------
         self.input_track = Track.objects.create(
             track_name="Input Track",
@@ -77,13 +76,28 @@ class RecommendTrackAPITest(APITestCase):
             album=self.album,
             genre=self.genre,
             tempo=120,
-            energy=8,
-            mood="focused"
+            loudness=-10,
+            key=5,
+            mode=1,
+        )
+
+        TrackTag.objects.create(
+            track=self.input_track,
+            tag=self.electronic_tag,
+            weight=1.0,
+            source="test"
+        )
+
+        TrackTag.objects.create(
+            track=self.input_track,
+            tag=self.ambient_tag,
+            weight=0.7,
+            source="test"
         )
 
         # -------------------------------------------------
-        # Best recommendation candidate
-        # This should be returned by the API.
+        # Best recommendation candidate.
+        # Similar tags and audio metadata.
         # -------------------------------------------------
         self.recommended_track = Track.objects.create(
             track_name="Kerala",
@@ -91,14 +105,43 @@ class RecommendTrackAPITest(APITestCase):
             album=self.album,
             genre=self.genre,
             tempo=118,
-            energy=7,
-            mood="focused"
+            loudness=-11,
+            key=5,
+            mode=1,
+        )
+
+        TrackTag.objects.create(
+            track=self.recommended_track,
+            tag=self.electronic_tag,
+            weight=0.95,
+            source="test"
+        )
+
+        TrackTag.objects.create(
+            track=self.recommended_track,
+            tag=self.ambient_tag,
+            weight=0.65,
+            source="test"
+        )
+
+        # -------------------------------------------------
+        # Weaker recommendation candidate.
+        # -------------------------------------------------
+        self.poor_match_track = Track.objects.create(
+            track_name="Different Track",
+            artist=self.artist,
+            album=self.album,
+            genre=self.genre,
+            tempo=80,
+            loudness=-25,
+            key=9,
+            mode=0,
         )
 
     # =====================================================
-    # TEST: API RETURNS SUCCESSFUL RECOMMENDATION
+    # TEST: API RETURNS SUCCESSFUL RECOMMENDATIONS
     # =====================================================
-    def test_recommend_track_returns_real_recommendation(self):
+    def test_recommend_track_returns_real_recommendations(self):
 
         response = self.client.post(
             "/api/recommend/",
@@ -114,24 +157,85 @@ class RecommendTrackAPITest(APITestCase):
             format="json"
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
 
-        self.assertIn("session_id", response.data)
-        self.assertIn("recommended_track", response.data)
+        # -------------------------------------------------
+        # Check response structure
+        # -------------------------------------------------
+        self.assertIn(
+            "session_id",
+            response.data
+        )
+
+        self.assertIn(
+            "recommendations",
+            response.data
+        )
+
+        recommendations = response.data["recommendations"]
+
+        self.assertTrue(recommendations)
+
+        # -------------------------------------------------
+        # Best candidate should appear first
+        # -------------------------------------------------
+        first_result = recommendations[0]
 
         self.assertEqual(
-            response.data["recommended_track"]["track_name"],
+            first_result["track_name"],
             "Kerala"
         )
 
         self.assertEqual(
-            response.data["recommended_track"]["artist"],
+            first_result["artist"],
             "Bonobo"
         )
 
         self.assertEqual(
-            response.data["recommended_track"]["genre"],
+            first_result["genre"],
             "Electronic"
+        )
+
+        # -------------------------------------------------
+        # Recommendation should expose score and reason
+        # -------------------------------------------------
+        self.assertIn(
+            "score",
+            first_result
+        )
+
+        self.assertIn(
+            "reason",
+            first_result
+        )
+
+    # =====================================================
+    # TEST: INPUT TRACK IS NOT RETURNED
+    # =====================================================
+    def test_api_excludes_input_track_from_recommendations(self):
+
+        response = self.client.post(
+            "/api/recommend/",
+            {
+                "track_ids": [self.input_track.id],
+                "preferences": {},
+            },
+            format="json"
+        )
+
+        recommendations = response.data["recommendations"]
+
+        recommended_ids = [
+            item["id"]
+            for item in recommendations
+        ]
+
+        self.assertNotIn(
+            self.input_track.id,
+            recommended_ids
         )
 
     # =====================================================
@@ -143,43 +247,44 @@ class RecommendTrackAPITest(APITestCase):
             "/api/recommend/",
             {
                 "track_ids": [self.input_track.id],
-                "preferences": {
-                    "genre": "Electronic",
-                    "mood": "focused",
-                    "energy": 8,
-                    "tempo": 120,
-                },
-            },
-            format="json"
-        )
-
-        self.assertEqual(Session.objects.count(), 1)
-
-    # =====================================================
-    # TEST: RECOMMENDATION RESULT IS SAVED
-    # =====================================================
-    def test_api_saves_recommendation_result(self):
-
-        self.client.post(
-            "/api/recommend/",
-            {
-                "track_ids": [self.input_track.id],
-                "preferences": {
-                    "genre": "Electronic",
-                    "mood": "focused",
-                    "energy": 8,
-                    "tempo": 120,
-                },
+                "preferences": {},
             },
             format="json"
         )
 
         self.assertEqual(
-            RecommendationResult.objects.count(),
+            Session.objects.count(),
             1
         )
 
-        saved_result = RecommendationResult.objects.first()
+    # =====================================================
+    # TEST: RECOMMENDATION RESULTS ARE SAVED
+    # =====================================================
+    def test_api_saves_recommendation_results(self):
+
+        response = self.client.post(
+            "/api/recommend/",
+            {
+                "track_ids": [self.input_track.id],
+                "preferences": {},
+            },
+            format="json"
+        )
+
+        recommendations = response.data["recommendations"]
+
+        # The number saved should match the number returned.
+        self.assertEqual(
+            RecommendationResult.objects.count(),
+            len(recommendations)
+        )
+
+        # The highest-ranked saved result should be Kerala.
+        saved_result = (
+            RecommendationResult.objects
+            .order_by("-score")
+            .first()
+        )
 
         self.assertEqual(
             saved_result.track,
@@ -195,16 +300,17 @@ class RecommendTrackAPITest(APITestCase):
             "/api/recommend/",
             {
                 "track_ids": [9999],
-                "preferences": {
-                    "genre": "Electronic",
-                    "mood": "focused",
-                    "energy": 8,
-                    "tempo": 120,
-                },
+                "preferences": {},
             },
             format="json"
         )
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.status_code,
+            400
+        )
 
-        self.assertIn("error", response.data)
+        self.assertIn(
+            "error",
+            response.data
+        )
