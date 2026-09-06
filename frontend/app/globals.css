@@ -1,26 +1,1419 @@
-@import "tailwindcss";
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --purple: #6825c1;
+  --purple-dark: #541c9e;
+
+  --ink: #000000;
+  --muted: #4d4d4d;
+
+  --surface: #ffffff;
+  --surface-alt: #f8f5fc;
+
+  --border: #6825c1;
+
+  --focus: #6825c1;
+
+  --radius: 14px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ======================================================
+   MAIN APPLICATION
+   ====================================================== */
+
+.appShell {
+  min-height: 100vh;
+  padding: 28px 4vw 36px;
+}
+
+/* ======================================================
+   HEADER
+   ====================================================== */
+
+.siteHeader {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 22px;
+}
+
+.siteLogo {
+  width: auto;
+  height: 100px;
+  object-fit: contain;
+}
+
+.accessibilityButton {
+  border: 2px solid var(--purple);
+  border-radius: 11px;
+
+  background: #ffffff;
+  color: var(--ink);
+
+  min-height: 44px;
+  padding: 8px 16px;
+
+  font-size: 1rem;
+  font-weight: 600;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.accessibilityButton:hover,
+.accessibilityButton:focus-visible,
+.accessibilityButton[aria-pressed="true"] {
+  background: var(--purple);
+  color: #ffffff;
+}
+
+.headerRule {
+  grid-column: 1 / -1;
+
+  height: 10px;
+
+  border-radius: 999px;
+
+  background: var(--purple);
+
+  margin: 8px 0 28px;
+}
+
+/* ======================================================
+   PAGE LAYOUT
+   ====================================================== */
+
+.pageLayout {
+  display: grid;
+
+  grid-template-columns:
+    minmax(250px, 310px)
+    1fr;
+
+  gap: 24px;
+}
+
+/* ======================================================
+   SEARCH PANEL
+   ====================================================== */
+
+.searchPanel {
+  padding: 6px 20px 0 0;
+
+  border-right:
+    2px solid var(--purple);
+
+  min-width: 0;
+}
+
+.introText {
+  margin-top: 0;
+
+  font-size: 1.05rem;
+  line-height: 1.4;
+
+  color: var(--ink);
+}
+
+.searchForm {
+  display: grid;
+
+  gap: 10px;
+
+  margin: 20px 0;
+}
+
+.searchForm input {
+  width: 100%;
+
+  border:
+    2px solid var(--purple);
+
+  border-radius: 11px;
+
+  padding: 11px 12px;
+
+  min-height: 44px;
+
+  background: #ffffff;
+  color: var(--ink);
+}
+
+/* ======================================================
+   STANDARD BUTTONS
+   ====================================================== */
+
+.primaryButton,
+.secondaryButton,
+.playButton {
+  border:
+    2px solid var(--purple);
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  color: var(--ink);
+
+  min-height: 44px;
+
+  padding: 8px 16px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.03em;
+
+  font-weight: 600;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.playButton:hover {
+  background: var(--purple);
+
+  color: #ffffff;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.playButton:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+.primaryButton:disabled:hover,
+.secondaryButton:disabled:hover,
+.playButton:disabled:hover {
+  background: #ffffff;
+
+  color: var(--ink);
+}
+
+/* ======================================================
+   SEARCH RESULTS
+   ====================================================== */
+
+.searchResults {
+  margin-top: 18px;
+}
+
+.searchResults h2 {
+  color: var(--ink);
+}
+
+.searchResults ul {
+  list-style: none;
+
+  padding: 0;
+  margin: 0;
+
+  display: grid;
+
+  gap: 10px;
+}
+
+.searchResult {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 10px 0;
+}
+
+.searchResult > div {
+  display: grid;
+
+  gap: 3px;
+}
+
+.searchResult strong,
+.searchResult span,
+.searchResult small {
+  color: var(--ink);
+}
+
+/* ======================================================
+   SESSION LIST
+   ====================================================== */
+
+.sessionList {
+  margin: 16px 0 18px;
+}
+
+.sessionList h2 {
+  font-size: 1rem;
+
+  margin-bottom: 8px;
+
+  color: var(--ink);
+}
+
+.sessionList ol {
+  padding-left: 22px;
+
+  margin: 0;
+}
+
+.sessionList li {
+  color: var(--ink);
+}
+
+.sessionList li button {
+  border: 0;
+
+  background: transparent;
+
+  color: var(--ink);
+
+  font-size: 1.2rem;
+}
+
+.sessionHeading {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 1rem;
+}
+
+.sessionCount {
+  font-size: 0.85rem;
+
+  color: var(--muted);
+
+  white-space: nowrap;
+}
+
+.muted,
+.smallNote,
+.refineNote {
+  color: var(--muted);
+}
+
+.panelActions {
+  display: grid;
+
+  gap: 9px;
+
+  margin-top: 20px;
+}
+
+.smallNote {
+  font-size: 0.85rem;
+
+  text-align: center;
+
+  margin-top: 6px;
+
+  line-height: 1.4;
+}
+
+/* ======================================================
+   REFINEMENT PANEL
+   ====================================================== */
+
+.refinementPanel {
+  margin-top: 1.5rem;
+
+  padding-top: 1.25rem;
+
+  border-top:
+    2px solid var(--purple);
+}
+
+.refinementHeading {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  margin-bottom: 1rem;
+}
+
+.refinementHeading h2 {
+  margin: 0 0 0.25rem;
+
+  color: var(--ink);
+}
+
+.refinementGroup {
+  margin: 0 0 1rem;
+
+  padding: 0;
+
+  border: 0;
+}
+
+.refinementGroup label,
+.refinementGroup legend {
+  display: block;
+
+  margin-bottom: 0.5rem;
+
+  font-weight: 700;
+
+  color: var(--ink);
+}
+
+.refinementGroup select {
+  width: 100%;
+
+  padding: 0.7rem 0.8rem;
+
+  border:
+    2px solid var(--purple);
+
+  border-radius: 0.5rem;
+
+  background: #ffffff;
+
+  color: var(--ink);
+}
+
+.refinementOptions {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 0.4rem;
+}
+
+.refinementOption {
+  padding: 0.65rem 0.4rem;
+
+  min-height: 44px;
+
+  border:
+    2px solid var(--purple);
+
+  border-radius: 0.5rem;
+
+  background: #ffffff;
+
+  color: var(--ink);
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.refinementOption:hover,
+.refinementOptionActive {
+  background: var(--purple);
+
+  color: #ffffff;
+}
+
+.refinementOptionActive {
+  font-weight: 700;
+}
+
+.textButton {
+  border: 0;
+
+  background: transparent;
+
+  color: var(--ink);
+
+  text-decoration: underline;
+
+  cursor: pointer;
+
+  font: inherit;
+}
+
+/* ======================================================
+   RECOMMENDATIONS
+   ====================================================== */
+
+.recommendationsArea {
+  min-width: 0;
+
+  padding-left: 8px;
+}
+
+.recommendationHeader {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+}
+
+.recommendationHeader h1 {
+  font-size: 1.05rem;
+
+  font-weight: 600;
+
+  margin: 0;
+
+  color: var(--ink);
+}
+
+.sessionChips {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+}
+
+.chip {
+  border:
+    2px solid var(--purple);
+
+  border-radius: 999px;
+
+  padding: 3px 11px;
+
+  background: #ffffff;
+
+  color: var(--ink);
+}
+
+.recommendationGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(145px, 1fr)
+    );
+
+  gap: 20px 18px;
+}
+
+.recommendationCard {
+  min-width: 0;
+
+  text-align: left;
+
+  display: grid;
+
+  gap: 8px;
+
+  align-content: start;
+
+  color: var(--ink);
+}
+
+.artwork {
+  aspect-ratio: 1 / 1;
+
+  width: 100%;
+
+  background: #929292;
+
+  border-radius: 12px;
+
+  display: grid;
+
+  place-items: center;
+
+  color: #ffffff;
+
+  overflow: hidden;
+}
+
+.artwork img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  display: block;
+}
+
+.recommendationMeta {
+  min-width: 0;
+
+  color: var(--ink);
+}
+
+.recommendationMeta h3 {
+  font-size: 0.9rem;
+
+  margin: 0 0 4px;
+
+  color: var(--ink);
+}
+
+.trackName,
+.albumName {
+  margin: 2px 0;
+
+  font-size: 0.82rem;
+
+  color: var(--ink);
+}
+
+.reason {
+  display: block;
+
+  margin: 4px 0;
+
+  color: var(--ink);
+
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.rating {
+  display: flex;
+
+  justify-content: flex-start;
+  align-items: center;
+
+  gap: 2px;
+
+  flex-wrap: wrap;
+}
+
+.rateLabel {
+  margin-right: 2px;
+
+  font-size: 0.78rem;
+
+  color: var(--ink);
+}
+
+.stars {
+  display: inline-flex;
+
+  gap: 0;
+}
+
+.star {
+  border: 0;
+
+  background: transparent;
+
+  color: var(--purple);
+
+  padding: 0 1px;
+
+  font-size: 1rem;
+}
+
+.star:not(.selected) {
+  color: transparent;
+
+  -webkit-text-stroke:
+    1.3px var(--purple);
+}
+
+.star:hover,
+.star:focus-visible {
+  transform: scale(1.1);
+}
+
+.ratingValue {
+  font-size: 0.78rem;
+
+  margin-left: 3px;
+
+  color: var(--ink);
+}
+
+.trackHeader {
+  display: grid;
+
+  grid-template-columns: 1fr;
+  grid-template-rows:
+    50px
+    28px
+    44px;
+
+  gap: 6px;
+
+  margin-bottom: 6px;
+}
+
+.trackIdentity {
+  min-width: 0;
+
+  display: contents;
+}
+
+.trackIdentity h3 {
+  margin: 0;
+
+  color: var(--ink);
+
+  font-size: 0.95rem;
+  line-height: 1.25;
+
+  overflow-wrap: anywhere;
+
+  align-self: start;
+}
+
+.artistName {
+  margin: 0;
+
+  color: var(--ink);
+
+  font-size: 0.84rem;
+  line-height: 1.25;
+
+  overflow-wrap: anywhere;
+
+  align-self: start;
+}
+
+
+
+/* ======================================================
+   PLAYBACK BUTTON FOUNDATION
+   ====================================================== */
+
+/*
+   RecommendationCard.tsx will use these styles
+   when we switch its existing playback controls
+   to circular icon buttons.
+*/
+
+.playbackControls {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  height: 44px;
+}
+
+.playbackCircle {
+  width: 44px;
+  height: 44px;
+
+  min-width: 44px;
+
+  border:
+    2px solid var(--purple);
+
+  border-radius: 50%;
+
+  background: var(--purple);
+
+  color: #ffffff;
+
+  padding: 0;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  transition:
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.playbackCircle:hover,
+.playbackCircle:focus-visible {
+  background: var(--purple-dark);
+
+  transform: translateY(-1px);
+}
+
+.playIcon {
+  width: 0;
+  height: 0;
+
+  border-top:
+    7px solid transparent;
+
+  border-bottom:
+    7px solid transparent;
+
+  border-left:
+    11px solid #ffffff;
+
+  margin-left: 3px;
+}
+
+.pauseIcon {
+  display: flex;
+
+  gap: 4px;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+.pauseIcon::before,
+.pauseIcon::after {
+  content: "";
+
+  display: block;
+
+  width: 4px;
+  height: 15px;
+
+  border-radius: 1px;
+
+  background: #ffffff;
+}
+
+/* ======================================================
+   PAGINATION
+   ====================================================== */
+
+.pager {
+  display: flex;
+
+  justify-content: flex-end;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 28px;
+}
+
+.pager button {
+  border:
+    2px solid var(--purple);
+
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: var(--ink);
+
+  min-height: 40px;
+
+  padding: 7px 12px;
+
+  font-weight: 600;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.pager button:hover:not(:disabled),
+.pager button:focus-visible:not(:disabled) {
+  background: var(--purple);
+
+  color: #ffffff;
+}
+
+.pager button:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+}
+
+.pagerStatus {
+  color: var(--ink);
+
+  font-size: 0.9rem;
+}
+
+/* ======================================================
+   FEEDBACK PANEL
+   ====================================================== */
+
+.feedbackPanel {
+  margin-top: 40px;
+
+  padding: 32px;
+
+  border:
+    2px solid var(--purple);
+
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  color: var(--ink);
+}
+
+.feedbackPanel form {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 24px;
+
+  max-width: 720px;
+}
+
+.feedbackGrid {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 16px;
+}
+
+.feedbackRow {
+  display: grid;
+
+  grid-template-columns:
+    220px
+    180px
+    80px;
+
+  align-items: center;
+
+  column-gap: 20px;
+}
+
+.feedbackSummaryRow {
+  padding-bottom: 16px;
+
+  border-bottom:
+    1px solid var(--purple);
+}
+
+.feedbackLabel {
+  font-weight: 600;
+
+  color: var(--ink);
+}
+
+.feedbackStars {
+  display: flex;
+
+  align-items: center;
+
+  gap: 3px;
+}
+
+.feedbackStars button {
+  border: 0;
+
+  padding: 0;
+
+  background: transparent;
+
+  color: var(--purple);
+
+  font-size: 24px;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.feedbackValue {
+  white-space: nowrap;
+
+  color: var(--ink);
+}
+
+.feedbackComments {
+  display: flex !important;
+
+  flex-direction: column !important;
+
+  align-items: stretch !important;
+
+  gap: 8px;
+
+  width: 100%;
+}
+
+.feedbackComments > span {
+  display: block;
+
+  font-weight: 600;
+
+  color: var(--ink);
+}
+
+.feedbackComments textarea {
+  display: block;
+
+  box-sizing: border-box;
+
+  width: 100%;
+
+  min-height: 110px;
+
+  padding: 12px;
+
+  border:
+    2px solid var(--purple);
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: var(--ink);
+
+  font: inherit;
+
+  resize: vertical;
+}
+
+.feedbackPanel .primaryButton {
+  align-self: flex-start;
+
+  width: auto;
+
+  min-width: 190px;
+}
+
+/* ======================================================
+   ACCESSIBILITY-FOCUSED PRESENTATION
+   ====================================================== */
+
+.accessibilityMode {
+  font-size: 1.08rem;
+}
+
+.accessibilityMode .pageLayout {
+  grid-template-columns:
+    minmax(270px, 300px)
+    1fr;
+}
+
+.accessibilityMode
+  .recommendationHeader h1 {
+  font-size: 1.15rem;
+}
+
+.recommendationList {
+  display: grid;
+
+  gap: 18px;
+}
+
+.recommendationCardAccessible {
+  grid-template-columns:
+    200px
+    minmax(0, 1fr)
+    210px;
+
+  align-items: center;
+
+  text-align: left;
+
+  column-gap: 34px;
+}
+
+.recommendationCardAccessible
+  .artwork {
+  width: 200px;
+}
+
+.recommendationCardAccessible
+  .recommendationMeta h3 {
+  font-size: 1.35rem;
+
+  margin-bottom: 12px;
+}
+
+.recommendationCardAccessible
+  .recommendationMeta {
+
+  line-height: 1.5;
+
+}
+
+.recommendationCardAccessible
+  .artistName {
+
+  font-size: 1.1rem;
+
+  line-height: 1.45;
+
+  margin: 8px 0;
+
+}
+
+.recommendationCardAccessible
+  .albumName {
+
+  font-size: 1.1rem;
+
+  line-height: 1.45;
+
+  margin: 8px 0;
+
+}
+
+.recommendationCardAccessible
+  .reason {
+
+  display: block;
+
+  font-size: 1.05rem;
+
+  line-height: 1.5;
+
+  color: var(--ink);
+
+  max-width: 70ch;
+
+  margin: 8px 0;
+
+}
+
+.recommendationCardAccessible
+  .score {
+
+  font-size: 1.1rem;
+
+  line-height: 1.45;
+
+  margin: 8px 0;
+
+}
+
+.recommendationCardAccessible
+  .playButton {
+  min-height: 54px;
+
+  font-size: 1.15rem;
+}
+
+.ratingAccessible {
+  justify-content: flex-start;
+
+  margin-top: 10px;
+}
+
+.ratingAccessible
+  .rateLabel {
+  font-size: 1.2rem;
+
+  font-weight: 600;
+
+  margin-right: 14px;
+}
+
+.ratingAccessible
+  .star {
+  font-size: 2.2rem;
+
+  padding: 0 2px;
+}
+
+.ratingAccessible
+  .ratingValue {
+  font-size: 1.15rem;
+
+  margin-left: 14px;
+}
+
+/* ======================================================
+   SCREEN READER UTILITY
+   ====================================================== */
+
+.srOnly {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  padding: 0;
+  margin: -1px;
+
+  overflow: hidden;
+
+  clip: rect(0, 0, 0, 0);
+
+  white-space: nowrap;
+
+  border: 0;
+}
+
+/* ======================================================
+   RESPONSIVE
+   ====================================================== */
+
+@media (max-width: 1200px) {
+  .recommendationGrid {
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(155px, 1fr)
+      );
+  }
+
+  .recommendationCardAccessible {
+    grid-template-columns:
+      170px
+      minmax(0, 1fr)
+      170px;
+
+    gap: 22px;
+  }
+
+  .recommendationCardAccessible
+    .artwork {
+    width: 170px;
+  }
+}
+
+@media (max-width: 850px) {
+  .appShell {
+    padding: 20px;
+  }
+
+  .siteHeader {
+    grid-template-columns: 1fr;
+
+    gap: 14px;
+  }
+
+  .accessibilityButton {
+    justify-self: start;
+  }
+
+  .pageLayout,
+  .accessibilityMode
+    .pageLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .searchPanel {
+    border-right: 0;
+
+    border-bottom:
+      2px solid var(--purple);
+
+    padding: 0 0 24px;
+  }
+
+  .recommendationsArea {
+    padding-left: 0;
+  }
+
+  .recommendationGrid {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(140px, 1fr)
+      );
+  }
+
+
+
+  .recommendationCardAccessible {
+    grid-template-columns:
+      145px
+      1fr;
+  }
+
+  .recommendationCardAccessible
+    .artwork {
+    width: 145px;
+  }
+
+  .recommendationCardAccessible
+    .playButton {
+    grid-column: 2;
+
+    width: min(
+      220px,
+      100%
+    );
+  }
+
+  .feedbackRow {
+    grid-template-columns: 1fr;
+
+    gap: 8px;
+  }
+}
+
+@media (max-width: 700px) {
+  .refinementOptions {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .siteLogo {
+    height: 82px;
+  }
+
+  .recommendationGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendationCard {
+    grid-template-columns:
+      100px
+      1fr;
+
+    text-align: left;
+
+    align-items: center;
+  }
+
+  .recommendationCard
+    .artwork {
+    width: 100px;
+  }
+
+  .recommendationCard
+    .playButton {
+    grid-column: 1 / -1;
+  }
+
+  .rating {
+    justify-content: flex-start;
+  }
+
+  .recommendationCardAccessible {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendationCardAccessible
+    .artwork {
+    width: 100%;
+
+    max-width: 260px;
+  }
+
+  .recommendationCardAccessible
+    .playButton {
+    grid-column: 1;
+
+    width: 100%;
+  }
+
+  .recommendationHeader {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .pager {
+    justify-content: center;
+
+    flex-wrap: wrap;
+  }
+}
+
+/* Spotify connection message */
+/* SPOTIFY CONNECTION PROMPT */
+
+.spotifyPromptBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.spotifyPrompt {
+  width: min(440px, 100%);
+
+  padding: 28px;
+
+  border: 2px solid var(--purple);
+  border-radius: var(--radius);
+
+  background: var(--surface);
+  color: var(--ink);
+
+  text-align: left;
+
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.25);
+}
+
+.spotifyPrompt h2 {
+  margin: 0 0 12px;
+
+  color: var(--ink);
+
+  font-size: 1.35rem;
+}
+
+.spotifyPrompt p {
+  margin: 0;
+
+  color: var(--ink);
+
+  line-height: 1.5;
+}
+
+.spotifyPromptActions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 10px;
+
+  margin-top: 24px;
+}
+
+.spotifyPromptActions .primaryButton,
+.spotifyPromptActions .secondaryButton {
+  width: auto;
 }

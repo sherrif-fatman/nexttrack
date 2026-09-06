@@ -629,7 +629,9 @@ class PrototypeFeedback(models.Model):
         blank=True,
     )
 
-    recommendation_relevance = models.PositiveSmallIntegerField(
+    recommendation_relevance = models.DecimalField(
+        max_digits=2,
+        decimal_places=1,
         validators=[
             MinValueValidator(1),
             MaxValueValidator(5),
@@ -659,6 +661,10 @@ class PrototypeFeedback(models.Model):
 
     comments = models.TextField(
         blank=True,
+    )
+
+    consent_given = models.BooleanField(
+    default=False,
     )
 
     created_at = models.DateTimeField(

@@ -19,6 +19,8 @@ __pycache__/
 db.sqlite3
 
 .env
+.env.production
+.env.local
 
 node_modules/
 .next/
@@ -37,3 +39,5 @@ node_modules/
 backend/recommendations/external_data/msd/
 *.db
 *.h5
+
+nexttrack_production.dump

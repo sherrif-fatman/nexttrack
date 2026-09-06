@@ -5,3 +5,5 @@ python-decouple==3.8
 psycopg[binary]==3.2.3
 tables==3.10.2
 h5py
+requests
+gunicorn>=23.0,<24.0

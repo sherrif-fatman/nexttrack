@@ -25,8 +25,10 @@ from recommendations.services.recommender import (
 #
 # The recommender should:
 # - exclude tracks already selected in the session
+# - exclude artists already represented in the session
 # - rank candidate tracks by similarity
 # - use multiple session tracks as temporary context
+# - apply optional style, tempo and intensity refinements
 # - save the current recommendation results
 # - return an empty list when no candidates exist
 # =========================================================
@@ -34,24 +36,29 @@ class RecommenderLogicTest(TestCase):
 
     # =====================================================
     # SETUP TEST DATA
-    #
-    # Runs before each test method.
     # =====================================================
     def setUp(self):
 
         # -------------------------------------------------
-        # Create artist
+        # Session artist.
         # -------------------------------------------------
         self.artist = Artist.objects.create(
             artist_name="Test Artist"
         )
 
         # -------------------------------------------------
-        # Create genres
-        #
-        # Genre is not directly used by the new similarity
-        # calculation, but it remains part of the catalogue
-        # model and API output.
+        # Candidate artists.
+        # -------------------------------------------------
+        self.best_match_artist = Artist.objects.create(
+            artist_name="Best Match Artist"
+        )
+
+        self.poor_match_artist = Artist.objects.create(
+            artist_name="Poor Match Artist"
+        )
+
+        # -------------------------------------------------
+        # Genres.
         # -------------------------------------------------
         self.electronic = Genre.objects.create(
             genre="Electronic"
@@ -62,15 +69,25 @@ class RecommenderLogicTest(TestCase):
         )
 
         # -------------------------------------------------
-        # Create album
+        # Albums.
         # -------------------------------------------------
         self.album = Album.objects.create(
             album_name="Test Album",
             artist=self.artist
         )
 
+        self.best_match_album = Album.objects.create(
+            album_name="Best Match Album",
+            artist=self.best_match_artist
+        )
+
+        self.poor_match_album = Album.objects.create(
+            album_name="Poor Match Album",
+            artist=self.poor_match_artist
+        )
+
         # -------------------------------------------------
-        # Create musical tags
+        # Musical tags.
         # -------------------------------------------------
         self.rock_tag = Tag.objects.create(
             name="rock",
@@ -84,6 +101,11 @@ class RecommenderLogicTest(TestCase):
 
         self.ambient_tag = Tag.objects.create(
             name="ambient",
+            category="genre"
+        )
+
+        self.electronic_tag = Tag.objects.create(
+            name="electronic",
             category="genre"
         )
 
@@ -116,11 +138,7 @@ class RecommenderLogicTest(TestCase):
         )
 
         # -------------------------------------------------
-        # Second track selected by the user.
-        #
-        # This is deliberately similar to track one so the
-        # session represents a fairly consistent musical
-        # preference.
+        # Second session track.
         # -------------------------------------------------
         self.session_track_two = Track.objects.create(
             track_name="Session Track Two",
@@ -149,14 +167,11 @@ class RecommenderLogicTest(TestCase):
 
         # -------------------------------------------------
         # Strong candidate.
-        #
-        # Similar tags, tempo, loudness, key and mode.
-        # This should rank highly.
         # -------------------------------------------------
         self.best_track = Track.objects.create(
             track_name="Best Match Track",
-            artist=self.artist,
-            album=self.album,
+            artist=self.best_match_artist,
+            album=self.best_match_album,
             genre=self.rock,
             tempo=122,
             loudness=-10.5,
@@ -180,14 +195,11 @@ class RecommenderLogicTest(TestCase):
 
         # -------------------------------------------------
         # Poorer candidate.
-        #
-        # Different tag profile and noticeably different
-        # acoustic values.
         # -------------------------------------------------
         self.poor_match_track = Track.objects.create(
             track_name="Poor Match Track",
-            artist=self.artist,
-            album=self.album,
+            artist=self.poor_match_artist,
+            album=self.poor_match_album,
             genre=self.electronic,
             tempo=80,
             loudness=-25,
@@ -201,6 +213,56 @@ class RecommenderLogicTest(TestCase):
             weight=1.0,
             source="test"
         )
+
+    # =====================================================
+    # HELPER: CREATE A REFINEMENT TEST CANDIDATE
+    # =====================================================
+    def _create_refinement_candidate(
+        self,
+        artist_name,
+        track_name,
+        tempo=120,
+        loudness=-10,
+        tags=None,
+    ):
+        """
+        Create an eligible recommendation candidate for
+        refinement-specific tests.
+
+        Each candidate receives its own artist and album so
+        the session-artist exclusion rule does not interfere
+        with the refinement being tested.
+        """
+
+        candidate_artist = Artist.objects.create(
+            artist_name=artist_name
+        )
+
+        candidate_album = Album.objects.create(
+            album_name=f"{track_name} Album",
+            artist=candidate_artist
+        )
+
+        candidate_track = Track.objects.create(
+            track_name=track_name,
+            artist=candidate_artist,
+            album=candidate_album,
+            genre=self.rock,
+            tempo=tempo,
+            loudness=loudness,
+            key=5,
+            mode=1,
+        )
+
+        for tag, weight in tags or []:
+            TrackTag.objects.create(
+                track=candidate_track,
+                tag=tag,
+                weight=weight,
+                source="test"
+            )
+
+        return candidate_track
 
     # =====================================================
     # TEST: BEST MATCH IS RANKED FIRST
@@ -220,17 +282,13 @@ class RecommenderLogicTest(TestCase):
             limit=2
         )
 
-        # At least one recommendation should be returned.
         self.assertTrue(results)
 
-        # The strongest candidate should appear first.
         self.assertEqual(
             results[0]["track"],
             self.best_track
         )
 
-        # The best result should have a higher score than
-        # the poorer candidate.
         self.assertGreater(
             results[0]["score"],
             results[1]["score"]
@@ -249,7 +307,9 @@ class RecommenderLogicTest(TestCase):
             position=1
         )
 
-        results = recommend_track_for_session(session)
+        results = recommend_track_for_session(
+            session
+        )
 
         recommended_tracks = [
             item["track"]
@@ -258,6 +318,63 @@ class RecommenderLogicTest(TestCase):
 
         self.assertNotIn(
             self.session_track_one,
+            recommended_tracks
+        )
+
+    # =====================================================
+    # TEST: TRACKS BY SESSION ARTISTS ARE EXCLUDED
+    # =====================================================
+    def test_recommender_excludes_tracks_by_session_artist(self):
+
+        same_artist_track = Track.objects.create(
+            track_name="Same Artist Track",
+            artist=self.artist,
+            album=self.album,
+            genre=self.rock,
+            tempo=121,
+            loudness=-10,
+            key=5,
+            mode=1,
+        )
+
+        TrackTag.objects.create(
+            track=same_artist_track,
+            tag=self.rock_tag,
+            weight=1.0,
+            source="test"
+        )
+
+        TrackTag.objects.create(
+            track=same_artist_track,
+            tag=self.indie_tag,
+            weight=0.8,
+            source="test"
+        )
+
+        session = Session.objects.create()
+
+        SessionTrack.objects.create(
+            session=session,
+            track=self.session_track_one,
+            position=1
+        )
+
+        results = recommend_track_for_session(
+            session
+        )
+
+        recommended_tracks = [
+            item["track"]
+            for item in results
+        ]
+
+        self.assertNotIn(
+            same_artist_track,
+            recommended_tracks
+        )
+
+        self.assertIn(
+            self.best_track,
             recommended_tracks
         )
 
@@ -285,15 +402,11 @@ class RecommenderLogicTest(TestCase):
             limit=2
         )
 
-        # The candidate that is similar to both tracks should
-        # still rank first.
         self.assertEqual(
             results[0]["track"],
             self.best_track
         )
 
-        # The recommendation should contain the component
-        # scores used to build the final result.
         self.assertIn(
             "components",
             results[0]
@@ -320,6 +433,353 @@ class RecommenderLogicTest(TestCase):
         )
 
     # =====================================================
+    # TEST: STYLE REFINEMENT INFLUENCES RANKING
+    # =====================================================
+    def test_style_refinement_influences_ranking(self):
+        """
+        Two candidates have otherwise similar characteristics.
+
+        The electronic candidate should receive a style bonus
+        when the user explicitly selects "electronic".
+        """
+
+        session = Session.objects.create()
+
+        SessionTrack.objects.create(
+            session=session,
+            track=self.session_track_one,
+            position=1
+        )
+
+        neutral_candidate = (
+            self._create_refinement_candidate(
+                artist_name="Neutral Style Artist",
+                track_name="Neutral Style Track",
+                tempo=120,
+                loudness=-10,
+                tags=[
+                    (
+                        self.rock_tag,
+                        0.8,
+                    ),
+                ],
+            )
+        )
+
+        electronic_candidate = (
+            self._create_refinement_candidate(
+                artist_name="Electronic Style Artist",
+                track_name="Electronic Style Track",
+                tempo=120,
+                loudness=-10,
+                tags=[
+                    (
+                        self.rock_tag,
+                        0.8,
+                    ),
+                    (
+                        self.electronic_tag,
+                        1.0,
+                    ),
+                ],
+            )
+        )
+
+        results = recommend_track_for_session(
+            session,
+            limit=10,
+            preferences={
+                "style": "electronic"
+            },
+        )
+
+        result_by_track = {
+            item["track"]: item
+            for item in results
+        }
+
+        # Both candidates should be present.
+        self.assertIn(
+            neutral_candidate,
+            result_by_track
+        )
+
+        self.assertIn(
+            electronic_candidate,
+            result_by_track
+        )
+
+        # The selected style should give the electronic
+        # candidate a positive refinement contribution.
+        self.assertGreater(
+            result_by_track[
+                electronic_candidate
+            ]["components"][
+                "style_preference"
+            ],
+            result_by_track[
+                neutral_candidate
+            ]["components"][
+                "style_preference"
+            ],
+        )
+
+        self.assertGreater(
+            result_by_track[
+                electronic_candidate
+            ]["components"][
+                "refinement_bonus"
+            ],
+            result_by_track[
+                neutral_candidate
+            ]["components"][
+                "refinement_bonus"
+            ],
+        )
+
+        # The style-matching candidate should receive the
+        # higher final score.
+        self.assertGreater(
+            result_by_track[
+                electronic_candidate
+            ]["score"],
+            result_by_track[
+                neutral_candidate
+            ]["score"],
+        )
+
+    # =====================================================
+    # TEST: FASTER TEMPO REFINEMENT INFLUENCES RANKING
+    # =====================================================
+    def test_faster_tempo_refinement_influences_ranking(self):
+        """
+        The session track is 120 BPM.
+
+        The candidates are positioned equally around that
+        session tempo:
+
+            100 BPM = 20 BPM slower
+            140 BPM = 20 BPM faster
+
+        Their normal tempo similarity to the session is
+        therefore equal.
+
+        Selecting "faster" should favour the 140 BPM track.
+        """
+
+        session = Session.objects.create()
+
+        SessionTrack.objects.create(
+            session=session,
+            track=self.session_track_one,
+            position=1
+        )
+
+        slower_candidate = (
+            self._create_refinement_candidate(
+                artist_name="Slower Candidate Artist",
+                track_name="Slower Candidate",
+                tempo=100,
+                loudness=-10,
+                tags=[
+                    (
+                        self.rock_tag,
+                        0.8,
+                    ),
+                ],
+            )
+        )
+
+        faster_candidate = (
+            self._create_refinement_candidate(
+                artist_name="Faster Candidate Artist",
+                track_name="Faster Candidate",
+                tempo=140,
+                loudness=-10,
+                tags=[
+                    (
+                        self.rock_tag,
+                        0.8,
+                    ),
+                ],
+            )
+        )
+
+        results = recommend_track_for_session(
+            session,
+            limit=10,
+            preferences={
+                "tempo": "faster"
+            },
+        )
+
+        result_by_track = {
+            item["track"]: item
+            for item in results
+        }
+
+        self.assertIn(
+            slower_candidate,
+            result_by_track
+        )
+
+        self.assertIn(
+            faster_candidate,
+            result_by_track
+        )
+
+        # Their base scores should be equal because they
+        # are equally distant from the session tempo and
+        # otherwise have the same metadata.
+        self.assertAlmostEqual(
+            result_by_track[
+                slower_candidate
+            ]["components"]["base_score"],
+            result_by_track[
+                faster_candidate
+            ]["components"]["base_score"],
+            places=6,
+        )
+
+        # The faster preference should then break the tie.
+        self.assertGreater(
+            result_by_track[
+                faster_candidate
+            ]["components"][
+                "tempo_preference"
+            ],
+            result_by_track[
+                slower_candidate
+            ]["components"][
+                "tempo_preference"
+            ],
+        )
+
+        self.assertGreater(
+            result_by_track[
+                faster_candidate
+            ]["score"],
+            result_by_track[
+                slower_candidate
+            ]["score"],
+        )
+
+    # =====================================================
+    # TEST: STRONGER INTENSITY REFINEMENT INFLUENCES RANKING
+    # =====================================================
+    def test_stronger_intensity_refinement_influences_ranking(self):
+        """
+        The session track has loudness -10 dB.
+
+        The candidates are positioned equally around that
+        value:
+
+            -16 dB = softer
+             -4 dB = stronger
+
+        Their normal loudness similarity to the session is
+        therefore equal.
+
+        Selecting "stronger" should favour the -4 dB track.
+        """
+
+        session = Session.objects.create()
+
+        SessionTrack.objects.create(
+            session=session,
+            track=self.session_track_one,
+            position=1
+        )
+
+        softer_candidate = (
+            self._create_refinement_candidate(
+                artist_name="Softer Candidate Artist",
+                track_name="Softer Candidate",
+                tempo=120,
+                loudness=-16,
+                tags=[
+                    (
+                        self.rock_tag,
+                        0.8,
+                    ),
+                ],
+            )
+        )
+
+        stronger_candidate = (
+            self._create_refinement_candidate(
+                artist_name="Stronger Candidate Artist",
+                track_name="Stronger Candidate",
+                tempo=120,
+                loudness=-4,
+                tags=[
+                    (
+                        self.rock_tag,
+                        0.8,
+                    ),
+                ],
+            )
+        )
+
+        results = recommend_track_for_session(
+            session,
+            limit=10,
+            preferences={
+                "intensity": "stronger"
+            },
+        )
+
+        result_by_track = {
+            item["track"]: item
+            for item in results
+        }
+
+        self.assertIn(
+            softer_candidate,
+            result_by_track
+        )
+
+        self.assertIn(
+            stronger_candidate,
+            result_by_track
+        )
+
+        # Their normal scores should be equal before the
+        # explicit intensity preference is applied.
+        self.assertAlmostEqual(
+            result_by_track[
+                softer_candidate
+            ]["components"]["base_score"],
+            result_by_track[
+                stronger_candidate
+            ]["components"]["base_score"],
+            places=6,
+        )
+
+        # The stronger preference should break the tie.
+        self.assertGreater(
+            result_by_track[
+                stronger_candidate
+            ]["components"][
+                "intensity_preference"
+            ],
+            result_by_track[
+                softer_candidate
+            ]["components"][
+                "intensity_preference"
+            ],
+        )
+
+        self.assertGreater(
+            result_by_track[
+                stronger_candidate
+            ]["score"],
+            result_by_track[
+                softer_candidate
+            ]["score"],
+        )
+
+    # =====================================================
     # TEST: RECOMMENDATION RESULTS ARE SAVED
     # =====================================================
     def test_recommendation_results_are_saved(self):
@@ -337,8 +797,6 @@ class RecommenderLogicTest(TestCase):
             limit=2
         )
 
-        # The database should contain the same number of
-        # recommendation results returned by the recommender.
         self.assertEqual(
             RecommendationResult.objects.filter(
                 session=session
@@ -346,7 +804,6 @@ class RecommenderLogicTest(TestCase):
             len(results)
         )
 
-        # The highest-ranked result should also be stored.
         saved_result = (
             RecommendationResult.objects
             .filter(session=session)
@@ -372,7 +829,6 @@ class RecommenderLogicTest(TestCase):
             position=1
         )
 
-        # Generate the first recommendation set.
         first_results = recommend_track_for_session(
             session,
             limit=1
@@ -385,22 +841,17 @@ class RecommenderLogicTest(TestCase):
             1
         )
 
-        # Add another user-selected track.
         SessionTrack.objects.create(
             session=session,
             track=self.session_track_two,
             position=2
         )
 
-        # Generate recommendations again using the updated
-        # temporary session context.
         second_results = recommend_track_for_session(
             session,
             limit=2
         )
 
-        # Old results should have been removed and replaced
-        # with the current ranking.
         self.assertEqual(
             RecommendationResult.objects.filter(
                 session=session
@@ -408,7 +859,6 @@ class RecommenderLogicTest(TestCase):
             len(second_results)
         )
 
-        # We should still have a valid recommendation list.
         self.assertTrue(first_results)
         self.assertTrue(second_results)
 
@@ -419,8 +869,6 @@ class RecommenderLogicTest(TestCase):
 
         session = Session.objects.create()
 
-        # Add every available track to the session so there
-        # are no remaining recommendation candidates.
         SessionTrack.objects.create(
             session=session,
             track=self.session_track_one,
@@ -445,7 +893,9 @@ class RecommenderLogicTest(TestCase):
             position=4
         )
 
-        results = recommend_track_for_session(session)
+        results = recommend_track_for_session(
+            session
+        )
 
         self.assertEqual(
             results,
@@ -459,7 +909,9 @@ class RecommenderLogicTest(TestCase):
 
         session = Session.objects.create()
 
-        results = recommend_track_for_session(session)
+        results = recommend_track_for_session(
+            session
+        )
 
         self.assertEqual(
             results,
