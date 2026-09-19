@@ -150,9 +150,8 @@ export default function SearchPanel({
       aria-label="Build your session"
     >
       <p className="introText">
-        Search for a song or artist and add up to 5
-        tracks. You can also refine the recommendations
-        by style, tempo and intensity.
+        <strong>1. Search for music.</strong>{" "}
+        Search for a song or artist, then add up to 5 tracks to your session. You can further refine the recommendation by style, tempo and intensity.
       </p>
 
       <form
@@ -239,15 +238,19 @@ export default function SearchPanel({
                     (item) =>
                       item.id === track.id
                   )
-                    ? "Added"
-                    : "Add"}
+                    ? "Added to session"
+                  : "Add"}
                 </button>
               </li>
             ))}
           </ul>
         </div>
       )}
-
+      <p className="smallNote">
+        <strong>2. Choose your tracks.</strong>{" "}
+        Add at least one track from the results. Your selected tracks
+        will appear below. Click ADD to add a track to the Recommender (You can ADD up to five different tracks/ artists) Then click Find Music for your recommendations.
+      </p>
       <div
         className="sessionList"
         aria-live="polite"
@@ -293,6 +296,19 @@ export default function SearchPanel({
           </ol>
         )}
       </div>
+
+      {!hasRecommendations && (
+        <div className="panelActions">
+            <button
+              className="primaryButton"
+              type="button"
+              onClick={onFindMusic}
+              disabled={loading || sessionTracks.length === 0}
+            >
+              {loading ? "Finding music..." : "3. Find music"}
+            </button>
+        </div>
+      )}
 
       <div className="refinementPanel">
         <div className="refinementHeading">
@@ -425,25 +441,23 @@ export default function SearchPanel({
         </fieldset>
       </div>
 
-      <div className="panelActions">
-        <button
-          className="primaryButton"
-          type="button"
-          onClick={onFindMusic}
-          disabled={
-            loading ||
-            sessionTracks.length === 0
-          }
-        >
-          {loading
-            ? hasRecommendations
+      {hasRecommendations && (
+        <div className="panelActions">
+          <button
+            className="primaryButton"
+            type="button"
+            onClick={onFindMusic}
+            disabled={
+              loading ||
+              sessionTracks.length === 0
+            }
+          >
+            {loading
               ? "Refining..."
-              : "Finding music..."
-            : hasRecommendations
-              ? "Refine recommendations"
-              : "Find music"}
-        </button>
-      </div>
+              : "Refine recommendations"}
+          </button>
+        </div>
+      )}
 
       {error && (
         <p

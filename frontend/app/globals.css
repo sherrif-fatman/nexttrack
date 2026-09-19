@@ -876,7 +876,55 @@ textarea:focus-visible {
    FEEDBACK PANEL
    ====================================================== */
 
+.feedbackShortcut {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 18px;
+}
+
+.feedbackShortcut .secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-height: 44px;
+  padding: 9px 18px;
+  text-decoration: none;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+.feedbackShortcut .secondaryButton:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+@keyframes feedbackPulse {
+  0%,
+  70%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(104, 37, 193, 0);
+  }
+
+  82% {
+    box-shadow: 0 0 0 7px rgba(104, 37, 193, 0.18);
+  }
+}
+
+.feedbackShortcut .secondaryButton {
+  animation: feedbackPulse 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedbackShortcut .secondaryButton {
+    animation: none;
+  }
+}
+
 .feedbackPanel {
+  width: min(100%, 900px);
+
   margin-top: 40px;
 
   padding: 32px;
@@ -898,7 +946,7 @@ textarea:focus-visible {
 
   gap: 24px;
 
-  max-width: 720px;
+  width: 100%;
 }
 
 .feedbackGrid {
@@ -913,13 +961,13 @@ textarea:focus-visible {
   display: grid;
 
   grid-template-columns:
-    220px
+    minmax(280px, 1fr)
     180px
-    80px;
+    70px;
 
   align-items: center;
 
-  column-gap: 20px;
+  column-gap: 24px;
 }
 
 .feedbackSummaryRow {
@@ -1280,6 +1328,12 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
 
     gap: 8px;
+  }
+
+  .feedbackShortcut {
+    justify-content: flex-start;
+
+    margin-bottom: 16px;
   }
 }
 

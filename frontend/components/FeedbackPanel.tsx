@@ -45,7 +45,7 @@ export default function FeedbackPanel({
       searchClarity === 0
     ) {
       setError(
-        "Please rate the recommendations and complete all feedback ratings."
+        "Please rate at least one recommended track above, then complete all three feedback questions."
       );
       return;
     }
@@ -106,7 +106,7 @@ export default function FeedbackPanel({
 
   if (submitted) {
     return (
-      <section className="feedbackPanel">
+      <section id="feedback" className="feedbackPanel">
         <h2>Thank you</h2>
         <p>Your feedback has been recorded.</p>
       </section>
@@ -115,6 +115,7 @@ export default function FeedbackPanel({
 
   return (
     <section
+      id="feedback"
       className="feedbackPanel"
       aria-labelledby="feedback-heading"
     >
@@ -123,15 +124,20 @@ export default function FeedbackPanel({
       </h2>
 
       <p className="muted">
-        Your recommendation relevance score is calculated from the
-        tracks you rated above.
+        <strong>
+          Please rate some of the recommended tracks above. Before filling in the feedback otherwise you won't be able to submit your response.
+        </strong>{" "}
+      </p>
+      <p className="muted">
+        How relevant were they to the music you selected? Rate each
+        track from 1 (not relevant) to 5 (very relevant).
       </p>
 
       <form onSubmit={submitFeedback}>
         <div className="feedbackGrid">
           <div className="feedbackRow feedbackSummaryRow">
             <span className="feedbackLabel">
-              Recommendation relevance
+              Average recommendation relevance
             </span>
 
             <span className="feedbackValue">
@@ -142,19 +148,19 @@ export default function FeedbackPanel({
           </div>
 
           <FeedbackRating
-            label="Explanation clarity"
+            label="How clear were the reasons given for the recommendations?"
             value={explanationClarity}
             onChange={setExplanationClarity}
           />
 
           <FeedbackRating
-            label="Ease of use"
+            label="How easy was NextTrack to use?"
             value={interfaceEase}
             onChange={setInterfaceEase}
           />
 
           <FeedbackRating
-            label="Search clarity"
+            label="How easy was it to search for and select the music you wanted?"
             value={searchClarity}
             onChange={setSearchClarity}
           />

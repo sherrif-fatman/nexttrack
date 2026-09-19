@@ -175,6 +175,17 @@ export default function Home() {
         />
 
         <div>
+          {recommendations.length > 0 && (
+            <div className="feedbackShortcut">
+              <a
+                href="#feedback"
+                className="secondaryButton"
+              >
+                Leave feedback ↓
+              </a>
+            </div>
+          )}
+
           <Recommendations
             accessible={accessible}
             sessionTracks={sessionTracks}
