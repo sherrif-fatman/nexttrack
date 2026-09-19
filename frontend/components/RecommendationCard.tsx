@@ -9,6 +9,8 @@ import { findSpotifyTrack } from "@/lib/spotify";
 import { loginWithSpotify } from "@/lib/spotifyAuth";
 
 import {
+  initialiseSpotifyPlayer,
+  activateSpotifyPlayer,
   playSpotifyUri,
   pauseSpotifyPlayback,
 } from "@/lib/spotifyPlayer";
@@ -31,6 +33,20 @@ export default function RecommendationCard({
 
   async function handlePlay() {
     try {
+      const spotifyAccessToken =
+        localStorage.getItem("spotify_access_token");
+
+      const spotifyRefreshToken =
+        localStorage.getItem("spotify_refresh_token");
+
+      if (!spotifyAccessToken && !spotifyRefreshToken) {
+        setShowSpotifyPrompt(true);
+        return;
+      }
+
+      await initialiseSpotifyPlayer();
+      await activateSpotifyPlayer();
+
       const match = await findSpotifyTrack(
         recommendation.track_name,
         recommendation.artist

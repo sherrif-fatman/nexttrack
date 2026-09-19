@@ -157,6 +157,29 @@ export function initialiseSpotifyPlayer(): Promise<string> {
         }
       );
 
+      spotifyPlayer.addListener(
+        "autoplay_failed",
+        () => {
+          console.error(
+            "Spotify autoplay failed. The browser blocked playback."
+          );
+        }
+      );
+
+      spotifyPlayer.addListener(
+        "playback_error",
+        ({
+          message,
+        }: {
+          message: string;
+        }) => {
+          console.error(
+            "Spotify playback SDK error:",
+            message
+          );
+        }
+      );
+
       spotifyPlayer.connect();
     }
 
@@ -189,6 +212,23 @@ export function initialiseSpotifyPlayer(): Promise<string> {
       );
     }
   });
+}
+
+export async function activateSpotifyPlayer() {
+  if (!spotifyPlayer) {
+    return;
+  }
+
+  try {
+    await spotifyPlayer.activateElement();
+  } catch (error) {
+    console.error(
+      "Unable to activate Spotify player:",
+      error
+    );
+
+    throw error;
+  }
 }
 
 export async function playSpotifyUri(
