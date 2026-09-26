@@ -121,15 +121,7 @@ export default function Home() {
       setRecommendations(data.recommendations);
       setRatings({});
 
-      console.log(
-        "NextTrack session:",
-        data.session_id
-      );
 
-      console.log(
-        "NextTrack preferences:",
-        preferences
-      );
     } catch (err) {
       console.error(err);
 

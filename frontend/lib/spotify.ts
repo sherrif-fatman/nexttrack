@@ -54,9 +54,6 @@ export async function findSpotifyTrack(
   );
 
   if (response.status === 401) {
-    console.log(
-      "Spotify token expired. Refreshing..."
-    );
 
     token =
       await refreshSpotifyAccessToken();

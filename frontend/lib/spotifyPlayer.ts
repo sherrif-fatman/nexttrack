@@ -75,10 +75,6 @@ export function initialiseSpotifyPlayer(): Promise<string> {
         }: {
           device_id: string;
         }) => {
-          console.log(
-            "Spotify player ready:",
-            device_id
-          );
 
           spotifyDeviceId =
             device_id;
@@ -89,16 +85,7 @@ export function initialiseSpotifyPlayer(): Promise<string> {
 
       spotifyPlayer.addListener(
         "not_ready",
-        ({
-          device_id,
-        }: {
-          device_id: string;
-        }) => {
-          console.log(
-            "Spotify player offline:",
-            device_id
-          );
-
+        () => {
           spotifyDeviceId = null;
         }
       );
@@ -311,12 +298,7 @@ export async function pauseSpotifyPlayback() {
   try {
     await spotifyPlayer.pause();
 
-    console.log("Spotify playback paused.");
   } catch (error) {
-    console.error(
-      "Unable to pause Spotify playback:",
-      error
-    );
 
     throw error;
   }

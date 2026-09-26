@@ -47,7 +47,7 @@ function base64UrlEncode(input: ArrayBuffer) {
 }
 
 export async function loginWithSpotify() {
-  console.log("loginWithSpotify started");
+
 
   const codeVerifier =
     generateRandomString(64);

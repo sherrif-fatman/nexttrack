@@ -393,12 +393,10 @@ def _calculate_refinement(
 
     preferences = preferences or {}
 
-    # ------------------------------------------------------------
     # Support "style" as the intended API field.
     #
-    # "genre" is retained as a fallback so older API requests do
-    # not break while the frontend is being updated.
-    # ------------------------------------------------------------
+    # "genre" is retained as a backwards-compatible fallback for
+    # earlier API requests.
     style = (
         preferences.get("style")
         or preferences.get("genre")
@@ -724,7 +722,7 @@ def recommend_track_for_session(
             "score": final_score,
             "reason": reason,
 
-            # Keep detailed values available for debugging,
+            # Keep detailed values available for inspection,
             # automated testing and evaluation.
             "components": {
                 "tags": average_scores["tags"],

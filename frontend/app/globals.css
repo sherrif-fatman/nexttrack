@@ -1408,6 +1408,40 @@ textarea:focus-visible {
   }
 }
 
+/* Loading indicator */
+
+.loadingIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loadingSpinner {
+  width: 18px;
+  height: 18px;
+
+  flex-shrink: 0;
+
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+
+  animation: spinnerRotate 0.8s linear infinite;
+}
+
+@keyframes spinnerRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingSpinner {
+    animation: none;
+    border-right-color: currentColor;
+  }
+}
+
 /* Spotify connection message */
 /* SPOTIFY CONNECTION PROMPT */
 

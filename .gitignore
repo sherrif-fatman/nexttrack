@@ -41,3 +41,6 @@ backend/recommendations/external_data/msd/
 *.h5
 
 nexttrack_production.dump
+
+# Local working backups
+backend/recommendations/*.zip

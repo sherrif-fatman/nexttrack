@@ -31,9 +31,6 @@ export default function RecommendationCard({
   const [showSpotifyPrompt, setShowSpotifyPrompt] =
     useState(false);
 
-  const [spotifyDiagnostic, setSpotifyDiagnostic] =
-    useState("");
-
   async function handlePlay() {
     try {
       const spotifyAccessToken =
@@ -47,19 +44,10 @@ export default function RecommendationCard({
         return;
       }
 
-      setSpotifyDiagnostic("Initialising Spotify player...");
 
       await initialiseSpotifyPlayer();
 
-      setSpotifyDiagnostic(
-        "Spotify player ready. Activating audio..."
-      );
-
       await activateSpotifyPlayer();
-
-      setSpotifyDiagnostic(
-        "Audio activated. Finding track..."
-      );
 
       const match = await findSpotifyTrack(
         recommendation.track_name,
@@ -67,26 +55,13 @@ export default function RecommendationCard({
       );
 
       if (!match) {
-        console.log("No Spotify match found.");
         return;
       }
 
-      console.log("Spotify match:", match);
-
       await playSpotifyUri(match.uri);
 
-      setSpotifyDiagnostic(
-        "Spotify accepted the playback request."
-      );
-
-      console.log("Spotify playback started.");
     } catch (error) {
 
-      setSpotifyDiagnostic(
-        error instanceof Error
-          ? `Spotify error: ${error.message}`
-          : "Unknown Spotify playback error."
-      );
       console.error(
         "Spotify playback failed:",
         error
@@ -120,9 +95,6 @@ export default function RecommendationCard({
     try {
       await pauseSpotifyPlayback();
 
-      console.log(
-        "Spotify playback paused."
-      );
     } catch (error) {
       console.error(
         "Spotify pause failed:",
@@ -201,13 +173,6 @@ export default function RecommendationCard({
           {recommendation.album && (
             <p className="albumName">
               {recommendation.album}
-            </p>
-          )}
-
-          {spotifyDiagnostic && (
-            <p role="status">
-              <strong>Spotify diagnostic:</strong>{" "}
-              {spotifyDiagnostic}
             </p>
           )}
 

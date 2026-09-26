@@ -179,9 +179,17 @@ export default function SearchPanel({
           className="primaryButton"
           disabled={searching}
         >
-          {searching
-            ? "Searching..."
-            : "Search"}
+          {searching ? (
+            <span className="loadingIndicator">
+              <span
+                className="loadingSpinner"
+                aria-hidden="true"
+              />
+              Searching...
+            </span>
+          ) : (
+            "Search"
+          )}
         </button>
       </form>
 
@@ -452,9 +460,17 @@ export default function SearchPanel({
               sessionTracks.length === 0
             }
           >
-            {loading
-              ? "Refining..."
-              : "Refine recommendations"}
+            {loading ? (
+              <span className="loadingIndicator">
+                <span
+                  className="loadingSpinner"
+                  aria-hidden="true"
+                />
+                Refining...
+              </span>
+            ) : (
+              "Refine recommendations"
+            )}
           </button>
         </div>
       )}

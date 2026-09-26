@@ -122,11 +122,17 @@ export default function Recommendations({
 
       {loading ? (
         <p
-          className="muted"
+          className="muted loadingIndicator"
           aria-live="polite"
         >
-          Building recommendations from
-          your current session...
+          <span
+            className="loadingSpinner"
+            aria-hidden="true"
+          />
+          <span>
+            Building recommendations from
+            your current session...
+          </span>
         </p>
       ) : recommendations.length === 0 ? (
         <p className="muted">

@@ -8,6 +8,15 @@ between tracks.
 
 Keeping these calculations separate from recommender.py makes the
 recommendation logic easier to test, explain and adjust.
+
+The weighted Jaccard formulation used for artist-term similarity follows
+the weighted-set definition described by Manasse, McSherry and Talwar
+(2010), using summed element-wise minima over summed maxima.
+
+Reference:
+Manasse, M., McSherry, F. and Talwar, K. (2010).
+Consistent Weighted Sampling. Microsoft Research Technical Report
+MSR-TR-2010-73.
 """
 
 

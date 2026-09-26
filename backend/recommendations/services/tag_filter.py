@@ -10,7 +10,14 @@ The MSD artist_terms field contains a mixture of:
 - vocalist descriptions
 - other non-musical descriptors
 
-NextTrack only keeps terms that are useful for musical similarity.
+NextTrack uses a curated allow-list to retain terms considered useful
+for musical similarity. The vocabulary is a NextTrack design decision
+rather than an official Million Song Dataset genre classification.
+
+Data source:
+Bertin-Mahieux, T., Ellis, D.P.W., Whitman, B. and Lamere, P. (2011).
+The Million Song Dataset. Proceedings of the 12th International Society
+for Music Information Retrieval Conference (ISMIR 2011).
 """
 
 
@@ -19,8 +26,8 @@ NextTrack only keeps terms that are useful for musical similarity.
 # Only terms in this set will be kept by the recommendation system.
 # Everything else is ignored.
 #
-# This list can be expanded later if profiling the MSD reveals
-# additional useful musical terms.
+# The vocabulary is intentionally restricted to terms treated as
+# musically useful for NextTrack's similarity calculations.
 MUSICAL_TERMS = {
 
     # ------------------------------------------------------------

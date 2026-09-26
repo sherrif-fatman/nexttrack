@@ -3,11 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import logo4 from "./assets/logo4.png";
-import { loginWithSpotify } from "@/lib/spotifyAuth";
 
-import {
-  initialiseSpotifyPlayer,
-} from "@/lib/spotifyPlayer";
 
 
 type Props = {
@@ -19,10 +15,6 @@ export default function Header({
   accessible,
   onToggleAccessible,
 }: Props) {
-  async function handleSpotifyConnect() {
-    console.log("Connect Spotify clicked");
-    await loginWithSpotify();
-  }
 
   return (
     <header className="siteHeader">
@@ -40,37 +32,6 @@ export default function Header({
       >
         {accessible ? "Standard view" : "Accessibility"}
       </button>
-
-      {/* <button
-        type="button"
-        className="secondaryButton"
-        onClick={handleSpotifyConnect}
-      >
-        Connect Spotify
-      </button>
-
-      <button
-  type="button"
-  className="secondaryButton"
-  onClick={async () => {
-    try {
-      const deviceId =
-        await initialiseSpotifyPlayer();
-
-      console.log(
-        "NextTrack Spotify device:",
-        deviceId
-      );
-    } catch (error) {
-      console.error(
-        "Spotify player failed:",
-        error
-      );
-    }
-  }}
->
-  Start Spotify Player
-</button> */}
 
       <div className="headerRule" />
     </header>
